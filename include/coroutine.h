@@ -23,6 +23,7 @@ public:
         return &m_scheCtx;
     }
 private:
+    Fiber *cur_fiber;
     ucontext_t          m_scheCtx;
     std::vector<Fiber*> m_ready_fibers, m_running_fibers;
 };

@@ -2,7 +2,7 @@
 
 namespace co {
 
-Schedule::Schedule() {}
+Schedule::Schedule() : cur_fiber(nullptr) {}
 Schedule::~Schedule() {}
 void Schedule::createFiber(func run) {
     Fiber* fiber = new Fiber(run, this, 1024 * 128);
@@ -16,7 +16,9 @@ void Schedule::resume() {
         m_running_fibers = m_ready_fibers;
         m_ready_fibers.clear();
         for (auto& it : m_running_fibers) {
+            cur_fiber = it;
             swapcontext(&m_scheCtx, it->getCtx());
+            cur_fiber = nullptr;
             if (it->isFinished()) {
                 delete it;
             }
@@ -24,7 +26,10 @@ void Schedule::resume() {
         m_running_fibers.clear();
     }
 }
-void Schedule::yield() {}
+void Schedule::yield() {
+    m_ready_fibers.emplace_back(cur_fiber);
+    swapcontext(cur_fiber->getCtx(), &m_scheCtx);
+}
 
 Fiber::Fiber(func run, Schedule* sched, int size) : m_status(0), m_run(run), m_size(size), m_stack(new char[m_size]) {
     getcontext(&m_ctx);
